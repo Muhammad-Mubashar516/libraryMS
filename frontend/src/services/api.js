@@ -15,18 +15,28 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+
+
 // Handle auth errors
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const originalRequest = error.config;
+
+    
+    if (error.response?.status === 401 && !originalRequest.url.includes('/auth')) {
+      console.log('Token expired or invalid. Logging out.');
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      window.location.href = '/login'; 
     }
+
+    
     return Promise.reject(error);
   }
 );
+
+
 
 // Auth API
 export const authAPI = {

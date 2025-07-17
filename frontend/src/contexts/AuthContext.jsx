@@ -2,7 +2,9 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authAPI } from '../services/api';
 import toast from 'react-hot-toast';
 
+
 const AuthContext = createContext();
+
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -12,24 +14,27 @@ export const useAuth = () => {
   return context;
 };
 
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  
   useEffect(() => {
-    // Check if user is logged in on app start
     const token = localStorage.getItem('token');
     const userData = localStorage.getItem('user');
     
     if (token && userData) {
       setUser(JSON.parse(userData));
-      // Verify token is still valid
+      
       authAPI.getMe()
         .then(response => {
+          
           setUser(response.data);
           localStorage.setItem('user', JSON.stringify(response.data));
         })
         .catch(() => {
+          
           localStorage.removeItem('token');
           localStorage.removeItem('user');
           setUser(null);
@@ -38,9 +43,14 @@ export const AuthProvider = ({ children }) => {
     } else {
       setLoading(false);
     }
-  }, []);
+  }, []); 
 
+  // Login 
   const login = async (email, password) => {
+    // ---!! DIAGNOSTIC LOG !!---
+    
+    console.log('AuthContext: Attempting to log in with data:', { email, password });
+
     try {
       const response = await authAPI.login({ email, password });
       const { token, ...userData } = response.data;
@@ -49,15 +59,18 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
       
-      toast.success('Logged in successfully');
+      toast.success('Logged in successfully!');
       return { success: true };
+
     } catch (error) {
-      const message = error.response?.data?.message || 'Login failed';
+      const message = error.response?.data?.message || 'Login failed. Please check your credentials.';
+      console.error("Login Error in AuthContext:", message);
       toast.error(message);
-      return { success: false, message };
+      return { success: false, message: message };
     }
   };
 
+  // Register 
   const register = async (userData) => {
     try {
       const response = await authAPI.register(userData);
@@ -69,20 +82,26 @@ export const AuthProvider = ({ children }) => {
       
       toast.success('Account created successfully');
       return { success: true };
+
     } catch (error) {
       const message = error.response?.data?.message || 'Registration failed';
       toast.error(message);
-      return { success: false, message };
+      return { success: false, message: message };
     }
   };
 
+  // Logout 
   const logout = () => {
+    // ---!! DIAGNOSTIC LOG !!---
+    console.log('AuthContext: Logging out, clearing local storage and resetting user state.');
+    
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);
     toast.success('Logged out successfully');
   };
 
+  
   const value = {
     user,
     login,
@@ -94,4 +113,4 @@ export const AuthProvider = ({ children }) => {
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}; 
+};
